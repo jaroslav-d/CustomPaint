@@ -10,18 +10,20 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import com.example.custompaint.R
-import kotlin.math.sqrt
+import kotlin.math.*
 
 
 class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
 
     private var points: ArrayList<Point> = arrayListOf()
-    private val pointDrawable = ContextCompat.getDrawable(context, R.drawable.point)!!
+    private val brush = ContextCompat.getDrawable(context, R.drawable.point)!!
+    private var shape = Fuck(context, attr)
+    private val listeners: ArrayList<(v:View) -> Unit> = arrayListOf()
     private var preView: Bitmap? = null
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event == null) return false
-        if (event.actionMasked == MotionEvent.ACTION_DOWN || points.isEmpty()) {
+        if (points.isEmpty() || event.actionMasked == MotionEvent.ACTION_DOWN) {
             points.clear()
             points.add(Point(event.x.toInt(), event.y.toInt()))
             return true
@@ -40,26 +42,52 @@ class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
         return true
     }
 
+    fun setOnCreateShapeView(value: (v:View) -> Unit) = listeners.add(value)
+
     override fun onDraw(canvas: Canvas?) {
         if (canvas == null) return
+        val fuckPoints = getFuckPoints()
+        fuckPoints.forEach {
+            brush.setBounds(it.x - 5, bottom - it.y - 5, it.x + 5, bottom - it.y + 5)
+            brush.draw(canvas)
+        }
         if (preView != null) canvas.drawBitmap(preView!!, 0f, 0f, null)
         points.forEach {
-            pointDrawable.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
-            pointDrawable.draw(canvas)
+            brush.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
+            brush.draw(canvas)
         }
     }
 
     fun loadBitmapFromView(): Bitmap {
         measure(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         val b = Bitmap.createBitmap(
-            width,
-            height,
+            right - left,
+            bottom - top,
             Bitmap.Config.ARGB_8888
         )
         val c = Canvas(b)
         layout(left, top, right, bottom)
         draw(c)
         return b
+    }
+
+    private val functionFuck = { theta:Double -> sin(theta).pow(3) * cos(2*theta).pow(2) + cos(theta).pow(2)/2 }
+
+    private fun getFuckPoints(): List<Point> {
+        val centerX = (right - left)/2
+        val centerY = (bottom - top)/2
+        val scale = bottom - top - centerY/2
+        val step = PI/180
+        val thetaFrom = -PI/6
+        val thetaTo = 7*PI/6
+        val range = ((thetaTo-thetaFrom)/step).toInt()
+        val thetas = (0..range).map { it*step + thetaFrom }
+        return thetas.map {
+            Point(
+                (functionFuck(it) * scale * cos(it)).toInt() + centerX,
+                (functionFuck(it) * scale * sin(it)).toInt() + centerY/2
+            )
+        }
     }
 
 }
