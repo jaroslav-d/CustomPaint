@@ -13,12 +13,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
         binding = ActivityMainBinding.inflate(layoutInflater)
-        binding.canvas.setOnCreateShapeView(::createView)
-    }
-
-    fun createView(view: View) {
-        binding.root.addView(view)
+        setContentView(binding.root)
+        binding.canvas.setOnCreateShapeView { binding.root.addView(it) }
     }
 }

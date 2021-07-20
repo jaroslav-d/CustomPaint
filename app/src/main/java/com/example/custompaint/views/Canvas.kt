@@ -5,15 +5,17 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Point
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.example.custompaint.R
 import kotlin.math.*
 
 
-class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
+class Canvas(context: Context, private val attr: AttributeSet) : View(context, attr) {
 
     private var points: ArrayList<Point> = arrayListOf()
     private val brush = ContextCompat.getDrawable(context, R.drawable.point)!!
@@ -23,7 +25,8 @@ class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event == null) return false
-        if (points.isEmpty() || event.actionMasked == MotionEvent.ACTION_DOWN) {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            shape = Fuck(context, attr)
             points.clear()
             points.add(Point(event.x.toInt(), event.y.toInt()))
             return true
@@ -32,11 +35,18 @@ class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
         val deltaX = event.x.toInt() - lastPoint.x
         val deltaY = event.y.toInt() - lastPoint.y
         val distance = sqrt((deltaX*deltaX + deltaY*deltaY).toFloat())
-        val numberPoints = (distance/5).toInt()
+        val numberPoints = (distance/5).toInt() + 1
+        Log.i("Canvas", "next number points")
+        Log.i("Canvas", "${numberPoints}")
         points = (1..numberPoints).map {
             Point(event.x.toInt() - (deltaX - deltaX/numberPoints*it),
                 event.y.toInt() - (deltaY - deltaY/numberPoints*it))
         } as ArrayList<Point>
+        if (points.isEmpty()) Toast.makeText(context, "i'm a null", Toast.LENGTH_SHORT).show()
+        shape.points += points
+        if (event.actionMasked == MotionEvent.ACTION_UP) {
+            listeners.forEach { it(shape) }
+        }
         preView = loadBitmapFromView()
         invalidate()
         return true
@@ -51,7 +61,7 @@ class Canvas(context: Context, attr: AttributeSet) : View(context, attr) {
             brush.setBounds(it.x - 5, bottom - it.y - 5, it.x + 5, bottom - it.y + 5)
             brush.draw(canvas)
         }
-        if (preView != null) canvas.drawBitmap(preView!!, 0f, 0f, null)
+//        if (preView != null) canvas.drawBitmap(preView!!, 0f, 0f, null)
         points.forEach {
             brush.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
             brush.draw(canvas)
