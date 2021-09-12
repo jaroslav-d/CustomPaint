@@ -11,6 +11,5 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
-        binding.canvas.setOnCreateShapeView { binding.root.addView(it) }
     }
 }
