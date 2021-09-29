@@ -1,25 +1,34 @@
 package com.example.custompaint.views
 
+import android.animation.ValueAnimator
 import android.content.Context
-import android.graphics.Bitmap
+import android.graphics.*
 import androidx.core.graphics.createBitmap
-import android.graphics.Canvas
-import android.graphics.Point
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import androidx.core.content.ContextCompat
 import androidx.core.graphics.applyCanvas
-import com.example.custompaint.R
 import kotlin.math.*
 
 
 class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
 
     private var fillpoints = mutableListOf<Point>()
-    private val spot = ContextCompat.getDrawable(context, R.drawable.point)!!
     private val figures = mutableListOf<Figure>()
-    private var currentState: Bitmap? = null
+    private val currentState: Bitmap by lazy { createBitmap(width, height) }
+    private var animator = ValueAnimator.ofInt(0,100).apply {
+        repeatCount = ValueAnimator.INFINITE
+        repeatMode = ValueAnimator.REVERSE
+        duration = 1000
+        addUpdateListener {
+            if (figures.isEmpty()) return@addUpdateListener
+            currentState.applyCanvas {
+                drawBitmap(figures.last().bitmap, 0f, 0f, null)
+            }
+            invalidate()
+        }
+        start()
+    }
 
     override fun onTouchEvent(event: MotionEvent?): Boolean {
         if (event == null) return false
@@ -37,28 +46,21 @@ class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
         fillpoints = (1..numberPoints).map {
             Point(event.x.toInt() - (deltaX - deltaX/numberPoints*it),
                 event.y.toInt() - (deltaY - deltaY/numberPoints*it))
-        } as ArrayList<Point>
-        figures.last().points += fillpoints
-        if (event.actionMasked == MotionEvent.ACTION_UP) {
-            currentState = null
-        }
-        currentState = loadBitmapFromView()
-        invalidate()
+        } as MutableList<Point>
+        figures.last().points = fillpoints
         return true
     }
 
     override fun onDraw(canvas: Canvas?) {
         if (canvas == null) return
-        if (currentState != null) canvas.drawBitmap(currentState!!, 0f, 0f, null)
+        canvas.drawBitmap(currentState, 0f, 0f, null)
     }
 
-    private fun loadBitmapFromView(): Bitmap {
-        return createBitmap(width, height).applyCanvas {
-            if (currentState != null) drawBitmap(currentState!!, 0f, 0f, null)
-            fillpoints.forEach {
-                spot.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
-                spot.draw(this)
-            }
+    private fun rebuildCurrentState() {
+        if (figures.isEmpty()) return
+        currentState.applyCanvas {
+            this.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+            figures.forEach { drawBitmap(it.bitmap, 0f, 0f, null) }
         }
     }
 

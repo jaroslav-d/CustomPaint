@@ -22,13 +22,16 @@ class Figure(context: Context, private val width: Int, private val height: Int) 
         start()
     }
 
-    var points: ArrayList<Point> = arrayListOf()
-    val bitmap: Bitmap
-    get() = createBitmap(width, height).applyCanvas {
-        points.forEach {
-            spot.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
-            spot.draw(this)
+    var bitmap: Bitmap = createBitmap(width, height)
+    var points = mutableListOf<Point>()
+    set(value) {
+        bitmap.applyCanvas {
+            value.forEach {
+                spot.setBounds(it.x - 5, it.y - 5, it.x + 5, it.y + 5)
+                spot.draw(this)
+            }
         }
+        field += value
     }
 
     private val functionFuck = { theta:Double -> sin(theta).pow(3) * cos(2*theta).pow(2) + cos(theta).pow(2)/2 }
