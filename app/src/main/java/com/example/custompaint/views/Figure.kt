@@ -12,7 +12,7 @@ import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 
-class Figure(context: Context, private val width: Int, private val height: Int)  {
+class Figure(context: Context, width: Int, height: Int)  {
 
     private val spot = ContextCompat.getDrawable(context, R.drawable.point)!!
     private val animator = ValueAnimator.ofInt(0, 100).apply {
@@ -22,7 +22,7 @@ class Figure(context: Context, private val width: Int, private val height: Int) 
         start()
     }
 
-    var bitmap: Bitmap = createBitmap(width, height)
+    val bitmap: Bitmap = createBitmap(width, height)
     var points = mutableListOf<Point>()
     set(value) {
         bitmap.applyCanvas {
@@ -34,23 +34,37 @@ class Figure(context: Context, private val width: Int, private val height: Int) 
         field += value
     }
 
-    private val functionFuck = { theta:Double -> sin(theta).pow(3) * cos(2*theta).pow(2) + cos(theta).pow(2)/2 }
+//    это функция r(theta)
+    private val r = { theta:Double -> sin(theta).pow(3) * cos(2*theta).pow(2) + cos(theta).pow(2)/2 }
+//    это производная r'(theta) от функции r(theta)
+    private val r_ = { theta:Double -> sin(theta) * (3*sin(theta) * cos(theta) * cos(2*theta).pow(2) - cos(theta) - 4*sin(theta).pow(2) * sin(2*theta) * cos(2*theta)) }
 
-    private fun getFuckPoints(): List<Point> {
-        val centerX = width/2
-        val centerY = height/2
-        val scale = height - centerY/2
-        val step = PI /180
+    private val barycenter: (List<Point>) -> Point = {
+        it.reduce { acc, point -> acc.apply { x += point.x; y += point.y } }
+            .apply { x /= it.size; y /= it.size }
+    }
+
+    private fun getPolarPoints(): List<Point> {
+        val center = barycenter(points)
+        val scale = 500 // maybe dp or dpi or ???
+        val step = PI /180 /scale*100
         val thetaFrom = -PI /6
         val thetaTo = 7* PI /6
+//        val thetas = listOf<Double>().apply    {
+//            var thetaCurrent = thetaFrom
+//            while (thetaCurrent < thetaTo) {
+//
+//            }
+//        }
         val range = ((thetaTo-thetaFrom)/step).toInt()
         val thetas = (0..range).map { it*step + thetaFrom }
-        return thetas.map {
+        val crudePoints = thetas.map { theta ->
             Point(
-                (functionFuck(it) * scale * cos(it)).toInt() + centerX,
-                (functionFuck(it) * scale * sin(it)).toInt() + centerY/2
+                (r(theta) * scale * cos(theta)).toInt() + center.x,
+                (r(theta) * scale * sin(theta)).toInt() + center.y
             )
         }
+        return crudePoints
     }
 
     private fun animateXAxis(animator: ValueAnimator) {
