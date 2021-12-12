@@ -20,6 +20,7 @@ class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
         repeatCount = ValueAnimator.INFINITE
         repeatMode = ValueAnimator.REVERSE
         duration = 1000
+        addUpdateListener { rebuildCurrentState() }
         addUpdateListener {
             if (figures.isEmpty()) return@addUpdateListener
             currentState.applyCanvas {
