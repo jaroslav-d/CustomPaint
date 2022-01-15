@@ -16,6 +16,7 @@ class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
     private var fillpoints = mutableListOf<Point>()
     private val figures = mutableListOf<Figure>()
     private val currentState: Bitmap by lazy { createBitmap(width, height) }
+    private val bufferedState: Bitmap by lazy { createBitmap(width, height) }
     private var animator = ValueAnimator.ofInt(0,100).apply {
         repeatCount = ValueAnimator.INFINITE
         repeatMode = ValueAnimator.REVERSE
@@ -31,8 +32,7 @@ class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
         start()
     }
 
-    override fun onTouchEvent(event: MotionEvent?): Boolean {
-        if (event == null) return false
+    override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
             figures.add(Figure(context, width, height))
             fillpoints.clear()
@@ -52,16 +52,24 @@ class Easel(context: Context, attr: AttributeSet) : View(context, attr) {
         return true
     }
 
-    override fun onDraw(canvas: Canvas?) {
-        if (canvas == null) return
+    override fun onDraw(canvas: Canvas) {
         canvas.drawBitmap(currentState, 0f, 0f, null)
+        canvas.drawBitmap(bufferedState, 0f, 0f, null)
     }
 
     private fun rebuildCurrentState() {
         if (figures.isEmpty()) return
+        bufferedState.applyCanvas {
+            figures.filter { it.isFinished && it.isNotChecked }.forEach {
+                it.isNotChecked = false
+                drawBitmap(it.bitmap, 0f, 0f, null)
+            }
+        }
         currentState.applyCanvas {
-            this.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
-            figures.forEach { drawBitmap(it.bitmap, 0f, 0f, null) }
+            drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR)
+            figures.filter { it.isNotFinished }.forEach {
+                drawBitmap(it.bitmap, 0f, 0f, null)
+            }
         }
     }
 
